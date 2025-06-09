@@ -19,6 +19,7 @@ import upcomingIcon from '../../assets/upcoming.png';
 import recentActivityIcon from '../../assets/recent-activity.png';
 import AdminNavPane from '../../components/AdminNavPane';
 import TimeAgo from 'react-time-ago';
+import API_BASE_URL from '../../lib/apiConfig';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -67,13 +68,13 @@ const AdminDashboard = () => {
 
         try {
             // Fetch fresh data
-            const users = await fetch('http://localhost:8800/api/users', {
+            const users = await fetch(`${API_BASE_URL}/api/users`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include'
             });
 
-            const events = await fetch('http://localhost:8800/api/events', {
+            const events = await fetch(`${API_BASE_URL}/api/events`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include'
@@ -123,7 +124,7 @@ const AdminDashboard = () => {
 
     const fetchActivities = async () => {
         try {
-            const response = await fetch('http://localhost:8800/api/admin/activities', {
+            const response = await fetch(`${API_BASE_URL}/api/admin/activities`, {
                 credentials: 'include'
             });
 
