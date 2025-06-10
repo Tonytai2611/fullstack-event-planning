@@ -1,4 +1,4 @@
-    import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
     import chartActive from '../assets/chart-active.png';
     import chartInactive from '../assets/chart-inactive.png';
     import userActive from '../assets/user-active.png';
@@ -9,6 +9,7 @@
     import settingInactive from '../assets/setting-inactive.png';
     import { useNavigate } from 'react-router-dom';
     import { AdminAuthContext } from '../context/adminAuthContext';
+    import API_BASE_URL from '../lib/apiConfig';
 
     const AdminNavPane = ({ activeMenu, setActiveMenu }) => {
         const navigate = useNavigate();
@@ -43,7 +44,7 @@
         const handleLogout = async () => {
             try {
                 // Call the backend API to log out
-                await fetch('/api/admin/logout', {
+                await fetch(`${API_BASE_URL}/api/admin/logout`, {
                     method: 'POST',
                     credentials: 'include', // Include cookies for authentication
                 });

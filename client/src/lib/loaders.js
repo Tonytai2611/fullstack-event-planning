@@ -72,7 +72,7 @@ export const singleEventLoader = async ({ params }) => {
 export const eventCommentsLoader = async ({ params }) => {
     try {
         const eventId = params.id;
-        const response = await fetch(`/api/events/${eventId}/comments`);
+        const response = await fetch(`${API_BASE_URL}/api/events/${eventId}/comments`);
 
         if (!response.ok) {
             throw new Error(`Failed to fetch comments for event with ID: ${eventId}`);
