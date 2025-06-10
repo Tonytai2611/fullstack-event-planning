@@ -24,9 +24,25 @@ connectDb();
 
 const app = express();
 
-// Update your CORS configuration
 app.use(cors({
-  origin: ['https://starlit-klepon-0adae4.netlify.app', 'http://localhost:5173'],
+  // Sử dụng function để kiểm tra origin động
+  origin: function(origin, callback) {
+    // Danh sách origins chính thức
+    const allowedOrigins = [
+      'https://starlit-klepon-0adae4.netlify.app',  // Production URL
+      'http://localhost:5173'                       // Development
+    ];
+    
+    // Cho phép tất cả Netlify preview URL có format tương tự
+    if (origin && (
+      allowedOrigins.includes(origin) || 
+      origin.match(/https:\/\/.*--starlit-klepon-0adae4\.netlify\.app$/)
+    )) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
