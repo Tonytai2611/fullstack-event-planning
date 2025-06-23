@@ -27,7 +27,7 @@ const app = express();
 app.use(cors({
     origin: [
         'http://localhost:5173',  // For local development
-        'https://relaxed-sprite-091d26.netlify.app'  // Your Netlify URL
+        'https://eventmangementapp.netlify.app'  // Your Netlify URL
     ],
     credentials: true,  // This is the key part that's missing!
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
