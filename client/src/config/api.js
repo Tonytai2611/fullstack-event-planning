@@ -1,5 +1,5 @@
 // API Configuration
-export const API_BASE_URL = 'https://event-management-web-app-production-bee8.up.railway.app';
+export const API_BASE_URL = 'https://fullstack-event-planning-production.up.railway.app';
 
 // Helper function to create API URLs
 export const createApiUrl = (endpoint) => {
