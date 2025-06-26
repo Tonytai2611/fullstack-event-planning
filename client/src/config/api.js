@@ -1,5 +1,6 @@
 // API Configuration
-export const API_BASE_URL = 'https://fullstack-event-planning-production.up.railway.app';
+export const API_BASE_URL = 'http://localhost:8800';
+// export const API_BASE_URL = 'https://fullstack-event-planning-production.up.railway.app';
 
 // Helper function to create API URLs
 export const createApiUrl = (endpoint) => {

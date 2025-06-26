@@ -38,6 +38,20 @@ const userSchema = mongoose.Schema({
         enum: ['online', 'offline', 'away'],
         default: 'offline'
     },
+    // Trường thông tin xác thực email
+    isEmailVerified: {
+        type: Boolean,
+        default: false
+    },
+    emailVerificationCode: {
+        type: String
+    },
+    emailVerificationExpires: {
+        type: Date
+    },
+    emailVerifiedAt: {
+        type: Date
+    },
 },
 {
     timestamps: true,

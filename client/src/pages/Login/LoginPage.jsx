@@ -59,6 +59,7 @@ const LoginPage = () => {
             const data = await res.json();
 
             if (!res.ok) {
+                // Not checking for email verification anymore as it's not required for login
                 throw new Error(data.message || `Login failed with status: ${res.status}`);
             }
 
@@ -66,14 +67,13 @@ const LoginPage = () => {
                 throw new Error('No user data in response');
             }
 
-
             updateUser(data.user);
             console.log('Login successful:', data);
             navigate('/home'); // Redirect to home page after successful login
 
         } catch (err) {
             console.error('Login error:', err);
-            alert(err.message || 'Something went wrong. Please try again.');
+            setError(err.message || 'Something went wrong. Please try again.');
         } finally {
             setIsLoading(false);
         }

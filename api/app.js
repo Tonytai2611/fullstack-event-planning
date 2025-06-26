@@ -29,9 +29,9 @@ app.use(cors({
         'http://localhost:5173',  // For local development
         'https://eventmangementapp.netlify.app'  // Your Netlify URL
     ],
-    credentials: true,  // This is the key part that's missing!
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 app.use(express.json());
 app.use(cookieParser());

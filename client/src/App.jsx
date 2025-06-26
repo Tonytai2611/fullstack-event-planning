@@ -8,6 +8,7 @@ import CreateEvent from './pages/CreateEvent/CreateEvent.jsx';
 import LandingPage from './pages/Landing/LandingPage.jsx';
 import LoginPage from './pages/Login/LoginPage.jsx';
 import SignUpPage from './pages/SignUp/SignUpPage.jsx';
+import EmailVerificationPage from './pages/EmailVerification/EmailVerificationPage.jsx';
 import NotificationPage from './pages/Notification/NotificationPage.jsx';
 import AdminUserPage from './pages/Admin/AdminUserPage.jsx';
 import AdminEventsPage from './pages/Admin/AdminEventsPage.jsx';
@@ -80,6 +81,11 @@ function App() {
     {
       path: "/signup",
       element: <SignUpPage />,
+      errorElement: <ErrorPage />,
+    },
+    {
+      path: "/verify-email",
+      element: <EmailVerificationPage />,
       errorElement: <ErrorPage />,
     },
     {
@@ -170,6 +176,11 @@ function App() {
         <ProtectedRoute>
           <NotificationPage />
         </ProtectedRoute>,
+      errorElement: <ErrorPage />,
+    },
+    {
+      path: "/email-verification",
+      element: <EmailVerificationPage />,
       errorElement: <ErrorPage />,
     },
   ]);

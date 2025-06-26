@@ -109,15 +109,47 @@ const SignUpPage = () => {
             });
 
             const data = await res.json();
+            console.log("API Response:", res);
+            console.log("Response status:", res.status);
+            console.log("Full response data:", data);
 
             if (!res.ok) {
+                console.error("Registration failed:", data.message);
                 setError(data.message || 'Registration failed');
+                setIsLoading(false);
                 return;
             }
 
-            setTimeout(() => {
-                navigate("/login");
-            }, 1500);
+            console.log("Registration response data:", data);
+            
+            if (data.requireVerification) {
+                // Redirect to verification page with email
+                console.log("Verification required, preparing to redirect to verification page");
+                setSuccessMessage('Registration successful! Please verify your email.');
+                // Hiển thị thông báo thành công ngay lập tức
+                setSuccessMessage('Registration successful! Please verify your email.');
+                console.log("Redirecting to verification page with email:", data.email);
+                
+                // Lưu email vào localStorage để đề phòng mất state
+                localStorage.setItem('verificationEmail', data.email);
+                localStorage.setItem('isFromSignup', 'true');
+                
+                // Chuyển hướng ngay lập tức
+                navigate('/verify-email', { 
+                    state: { 
+                        email: data.email,
+                        isFromSignup: true 
+                    } 
+                });
+            } else {
+                // Standard redirect to login
+                console.log("No verification required, redirecting to login");
+                setSuccessMessage('Registration successful! You can now log in.');
+                setTimeout(() => {
+                    navigate("/login");
+                }, 1500);
+            }
+
             console.log(data);
         } catch (err) {
             console.error('Registration error:', err);
@@ -139,6 +171,14 @@ const SignUpPage = () => {
                         {error}
                     </div>
                 )}
+
+                {/* Show success message */}
+                {successMessage && (
+                    <div className="mb-4 p-3 bg-green-50 border border-green-300 text-green-700 rounded-md">
+                        {successMessage}
+                    </div>
+                )}
+                
                 <form onSubmit={handleSubmit}>
                     <div className="flex gap-5 mb-4">
                         <div className="flex-1">
