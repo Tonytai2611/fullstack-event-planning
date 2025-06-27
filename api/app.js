@@ -8,6 +8,7 @@ import userRoute from './routes/userRoute.js';
 import eventRoute from './routes/eventRoute.js';
 import adminRoute from './routes/adminRoute.js';
 import settingsRoute from './routes/settingsRoute.js';
+import testEmailRoute from './routes/testEmailRoute.js';
 
 import cookieParser from 'cookie-parser';
 import notificationRoute from './routes/notificationRoute.js';
@@ -43,7 +44,8 @@ app.use('/api/comments', commentRoute);
 app.use('/api/users', userRoute);
 app.use('/api/events', eventRoute);
 app.use('/api/notifications', notificationRoute);
-app.use('/api/admin', adminRoute)
+app.use('/api/admin', adminRoute);
+app.use('/api/test-email', testEmailRoute);
 
 app.listen(8800, () => {
     console.log('Server is running on port 8800');

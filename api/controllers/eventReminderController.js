@@ -3,6 +3,7 @@ import Notification from '../models/Notification.js';
 import Participation from '../models/Participation.js';
 import mongoose from 'mongoose';
 import User from '../models/User.js';
+import nodemailerService from '../utils/nodemailerService.js';
 
 /**
  * Send reminders to users who have been invited but haven't responded
@@ -57,6 +58,7 @@ export const sendPendingInvitationReminders = async (req, res) => {
             kind: 'Invitation'
         }).session(session)
             .select('user')
+            .populate('user', 'username email firstName lastName')
             .lean();
 
         if (pendingInvitations.length === 0) {
@@ -68,14 +70,15 @@ export const sendPendingInvitationReminders = async (req, res) => {
 
         // Create notifications for each invited user
         const notifications = [];
+        const emailPromises = [];
+        
         for (const invitation of pendingInvitations) {
             notifications.push({
-                userId: invitation.user,
+                userId: invitation.user._id,
                 type: 'invitationReminder',
                 message: `Reminder: You have a pending invitation to ${event.title}`,
                 relatedId: invitation._id,
                 notificationSender: organizerId,
-
                 data: {
                     message: `You are invited to attend the "${event.title}" on ${event.startDate} from ${event.startTime} to ${event.endTime} at ${event.location}.
                 
@@ -90,12 +93,26 @@ export const sendPendingInvitationReminders = async (req, res) => {
                 },
                 isRead: false
             });
+            
+            // Send email notification
+            if (invitation.user && invitation.user.email) {
+                emailPromises.push(
+                    nodemailerService.sendEventReminder(
+                        invitation.user,
+                        event,
+                        event.organizer
+                    )
+                );
+            }
         }
 
         await Notification.create(notifications, { session, ordered: true });
 
         // Commit transaction
         await session.commitTransaction();
+        
+        // Send emails after transaction completes (emails are not part of the transaction)
+        await Promise.allSettled(emailPromises);
 
         res.status(200).json({
             success: true,
@@ -175,6 +192,7 @@ export const sendAttendeeReminders = async (req, res) => {
             status: 'approved'
         }).session(session)
             .select('user')
+            .populate('user', 'username email firstName lastName')
             .lean();
 
         if (confirmedAttendees.length === 0) {
@@ -186,9 +204,11 @@ export const sendAttendeeReminders = async (req, res) => {
 
         // Create notifications for each attendee
         const notifications = [];
+        const emailPromises = [];
+        
         for (const attendee of confirmedAttendees) {
             notifications.push({
-                userId: attendee.user,
+                userId: attendee.user._id,
                 type: 'eventReminder',
                 message: `Reminder: Event "${event.title}" is coming up`,
                 relatedId: attendee._id,
@@ -206,12 +226,26 @@ export const sendAttendeeReminders = async (req, res) => {
                 },
                 isRead: false
             });
+            
+            // Send email notification
+            if (attendee.user && attendee.user.email) {
+                emailPromises.push(
+                    nodemailerService.sendEventReminder(
+                        attendee.user,
+                        event,
+                        event.organizer
+                    )
+                );
+            }
         }
 
         await Notification.create(notifications, { session, ordered: true });
 
         // Commit transaction
         await session.commitTransaction();
+        
+        // Send emails after transaction completes (emails are not part of the transaction)
+        await Promise.allSettled(emailPromises);
 
         res.status(200).json({
             success: true,

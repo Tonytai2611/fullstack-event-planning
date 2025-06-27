@@ -6,6 +6,7 @@ import Notification from '../models/Notification.js';
 import Participation from '../models/Participation.js';
 import Invitation from '../models/Invitation.js';
 import User from '../models/User.js';
+import nodemailerService from '../utils/nodemailerService.js';
 
 export const getRequests = async (req, res) => {
     try {
@@ -51,7 +52,8 @@ export const requestToJoinEvent = async (req, res) => {
 
         // Check if event exists with minimal data projection
         const event = await Event.findById(eventId)
-            .select('title organizer status publicity curAttendees maxAttendees startDate startTime endDate endTime')
+            .select('title organizer status publicity curAttendees maxAttendees startDate startTime endDate endTime location')
+            .populate('organizer', 'username email firstName lastName avatar')
             .session(session)
             .lean();
 
@@ -81,7 +83,7 @@ export const requestToJoinEvent = async (req, res) => {
             throw new Error('Event is at maximum capacity');
         }
 
-        if (event.organizer.toString() === userId) {
+        if (event.organizer._id.toString() === userId) {
             await session.abortTransaction();
             throw new Error('You are the organizer of this event');
         }
@@ -241,13 +243,13 @@ export const requestToJoinEvent = async (req, res) => {
 
         // Create notification for organizer
         await Notification.create([{
-            userId: event.organizer,
+            userId: event.organizer._id,
             type: 'joinRequest',
             message: `${requestingUser.username || 'A user'} has requested to join your event`,
             relatedId: request._id,
             notificationSender: userId,
             data: {
-
+                // Add any additional data needed for the notification
             },
             isRead: false
         }], { session });
@@ -265,6 +267,18 @@ export const requestToJoinEvent = async (req, res) => {
 
         // Commit transaction
         await session.commitTransaction();
+        
+        // Send email to organizer (outside transaction)
+        try {
+            await nodemailerService.sendJoinRequestEmail(
+                event.organizer,
+                event,
+                requestingUser
+            );
+        } catch (emailError) {
+            console.error('Error sending join request email:', emailError);
+            // We don't want to fail the request if the email fails
+        }
 
         res.status(201).json(result);
     } catch (err) {
@@ -328,7 +342,7 @@ export const handleJoinRequest = async (req, res) => {
             kind: 'Request'
         }).session(session)
             .populate('event', 'title organizer curAttendees maxAttendees status')
-            .populate('user', 'username email');
+            .populate('user', 'username email firstName lastName');
 
         if (!joinRequest) {
             throw new Error('Join request not found');
@@ -459,6 +473,19 @@ export const handleJoinRequest = async (req, res) => {
         };
 
         await session.commitTransaction();
+        
+        // Send email notification to the user (outside transaction)
+        try {
+            await nodemailerService.sendJoinRequestResponse(
+                joinRequest.user,
+                event,
+                event.organizer,
+                action === 'approve'
+            );
+        } catch (emailError) {
+            console.error('Error sending join request response email:', emailError);
+            // We don't want to fail the request if the email fails
+        }
 
         res.status(200).json(result);
     } catch (err) {

@@ -5,7 +5,7 @@ import Notification from '../models/Notification.js';
 import { logActivity } from '../middleware/logActivity.js';
 import mongoose from "mongoose";
 import User from '../models/User.js';
-
+import nodemailerService from '../utils/nodemailerService.js';
 
 // GET /api/events/:eventId/invitations/:userId
 export const getInvitations = async (req, res) => {
@@ -73,7 +73,11 @@ export const inviteToEvent = async (req, res) => {
         const inviteeId = invitee._id;
 
         // Check if event exists & get details - do this in a single query
-        const event = await Event.findById(eventId).session(session);
+        const event = await Event.findById(eventId)
+            .select('title organizer startDate startTime endDate endTime location curAttendees maxAttendees status summary image publicity')
+            .session(session)
+            .lean();
+        
         if (!event) {
             await session.abortTransaction();
             session.endSession();
@@ -196,16 +200,42 @@ export const inviteToEvent = async (req, res) => {
         await session.commitTransaction();
         session.endSession();
 
+        // Send email notification (after transaction completes)
+        try {
+            await nodemailerService.sendEventInvitation(
+                invitee,
+                event,
+                organizer
+            );
+            console.log('Event invitation email sent successfully');
+        } catch (emailError) {
+            console.error('Error sending invitation email:', emailError);
+            // We don't want to fail the invitation if the email sending fails
+            // Just log the error and continue
+        }
+
         res.status(201).json({
             invitation: populatedInvitation,
             message: 'Invitation sent successfully'
         });
+
     } catch (err) {
         // Abort the transaction on error
-        await session.abortTransaction();
-        session.endSession();
-        console.error('Error creating invitation:', err);
-        res.status(500).json({ error: 'Failed to send invitation', message: err.message });
+        if (session) {
+            try {
+                await session.abortTransaction();
+            } catch (abortError) {
+                console.error('Error aborting transaction:', abortError);
+            }
+        }
+
+        console.error('Error inviting to event:', err);
+        res.status(500).json({ error: 'Failed to invite to event', message: err.message });
+    } finally {
+        // Always end the session
+        if (session) {
+            session.endSession();
+        }
     }
 };
 
