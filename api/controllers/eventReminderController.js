@@ -97,7 +97,7 @@ export const sendPendingInvitationReminders = async (req, res) => {
             // Send email notification
             if (invitation.user && invitation.user.email) {
                 emailPromises.push(
-                    nodemailerService.sendEventReminder(
+                    nodemailerService.sendInvitationReminderEmail(
                         invitation.user,
                         event,
                         event.organizer
@@ -230,7 +230,7 @@ export const sendAttendeeReminders = async (req, res) => {
             // Send email notification
             if (attendee.user && attendee.user.email) {
                 emailPromises.push(
-                    nodemailerService.sendEventReminder(
+                    nodemailerService.sendEventReminderEmail(
                         attendee.user,
                         event,
                         event.organizer

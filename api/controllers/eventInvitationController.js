@@ -202,7 +202,7 @@ export const inviteToEvent = async (req, res) => {
 
         // Send email notification (after transaction completes)
         try {
-            await nodemailerService.sendEventInvitation(
+            await nodemailerService.sendEventInvitationEmail(
                 invitee,
                 event,
                 organizer

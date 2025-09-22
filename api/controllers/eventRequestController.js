@@ -476,7 +476,7 @@ export const handleJoinRequest = async (req, res) => {
         
         // Send email notification to the user (outside transaction)
         try {
-            await nodemailerService.sendJoinRequestResponse(
+            await nodemailerService.sendJoinRequestResponseEmail(
                 joinRequest.user,
                 event,
                 event.organizer,

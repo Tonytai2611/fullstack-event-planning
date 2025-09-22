@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/authContext.jsx';
 import { AdminAuthContext } from '../../context/adminAuthContext';
@@ -8,7 +8,6 @@ import { API_BASE_URL } from '../../config/api';
 
 const LoginPage = () => {
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
     const { updateUser } = useContext(AuthContext);
     const { updateAdmin } = useContext(AdminAuthContext);
     const [isLoading, setIsLoading] = useState(false);
@@ -19,9 +18,6 @@ const LoginPage = () => {
         username: '',
         password: ''
     });
-
-    // Get redirect URL from search params
-    const redirectUrl = searchParams.get('redirect') || '/home';
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -73,8 +69,7 @@ const LoginPage = () => {
 
             updateUser(data.user);
             console.log('Login successful:', data);
-            console.log('Redirecting to:', redirectUrl);
-            navigate(redirectUrl); // Redirect to specified URL or default to home
+            navigate('/home'); // Redirect to home page after successful login
 
         } catch (err) {
             console.error('Login error:', err);

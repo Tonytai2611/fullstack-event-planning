@@ -64,8 +64,8 @@ const EventDetails = () => {
           );
         }
 
-        // check if user has approved request (only for public events)
-        if (!hasAccess && currentUser && eventData.publicity && eventData.requests) {
+        // check if user has approved request
+        if (!hasAccess && currentUser && eventData.requests) {
           hasAccess = eventData.requests.some(
             req => req.user?._id === currentUser._id && req.status === 'approved'
           );
@@ -175,12 +175,8 @@ const EventDetails = () => {
   useEffect(() => {
     if (!id || !isOrganizer) return;
     fetchInvitationsAndStats();
-    
-    // Only fetch requests for public events
-    if (eventData && eventData.publicity) {
-      fetchRequests();
-    }
-  }, [id, isOrganizer, eventData?.publicity]);
+    fetchRequests();
+  }, [id, isOrganizer]);
 
   // Set loading to false once event data is loaded
   useEffect(() => {
@@ -826,9 +822,7 @@ const EventDetails = () => {
 
           {invitations.length > 0 ? (
             <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
-              {invitations
-                .filter(invitation => invitation.status !== 'approved') // Only show pending or rejected invitations
-                .map((invitation) => (
+              {invitations.map((invitation) => (
                 <div key={invitation._id || invitation.id} className="flex items-center justify-between pb-3 border-b border-gray-100">
                   <div className="flex items-center">
                     <img
@@ -843,31 +837,31 @@ const EventDetails = () => {
                   </div>
                   <div className="flex items-center">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium 
-                      ${invitation.status === 'invited' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}
+                      ${invitation.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        invitation.status === 'invited' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'}`}
                     >
-                      {invitation.status === 'invited' ? ' Pending' : 'Rejected'}
+                      {invitation.status === 'invited' ? ' Pending' : invitation.status === 'approved' ? ' Accepted' : 'Rejected'}
                     </span>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-gray-500 text-sm">No pending invitations</p>
+            <p className="text-gray-500 text-sm">No invitations yet</p>
           )}
         </div>
 
-        {/* Requests List - Only show for public events */}
-        {eventData.publicity && (
-          <div className="">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-lg mb-3">Requests</h3>
-            </div>
+        {/* Requests List */}
+        <div className="">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-lg mb-3">Requests</h3>
+          </div>
 
-            {(requests.length > 0 || invitations.filter(inv => inv.status === 'approved').length > 0) ? (
+          {requests.length > 0 ? (
             <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
-              {/* Show actual requests */}
               {requests.map((request) => (
-                <div key={`req-${request._id || request.id}`} className="flex items-center justify-between pb-2">
+                <div key={request._id || request.id} className="flex items-center justify-between pb-2">
                   <div className="flex items-center">
                     <img
                       src={request.user?.avatar || '/images/avatar.png'}
@@ -881,7 +875,7 @@ const EventDetails = () => {
                   </div>
 
                   {request.status === 'pending' && (
-                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
+                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800' rounded-full text-xs font-medium">
                       Pending
                     </span>
                   )}
@@ -899,34 +893,11 @@ const EventDetails = () => {
                   )}
                 </div>
               ))}
-              
-              {/* Show approved invitations as requests */}
-              {invitations
-                .filter(invitation => invitation.status === 'approved')
-                .map((invitation) => (
-                <div key={`inv-req-${invitation._id || invitation.id}`} className="flex items-center justify-between pb-2">
-                  <div className="flex items-center">
-                    <img
-                      src={invitation.user?.avatar || '/images/avatar.png'}
-                      alt={invitation.user?.username || 'User'}
-                      className="w-8 h-8 rounded-full mr-3"
-                    />
-                    <div>
-                      <div className="font-medium">{invitation.user?.username || invitation.email}</div>
-                      <div className="text-xs text-gray-500">{invitation.user?.email || ''}</div>
-                    </div>
-                  </div>
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                    Approved (Invited)
-                  </span>
-                </div>
-              ))}
             </div>
           ) : (
             <p className="text-gray-500 text-sm">No requests</p>
           )}
-          </div>
-        )}
+        </div>
 
         {/* Basic Event Info */}
         <div className="space-y-4 pt-2">
@@ -985,8 +956,8 @@ const EventDetails = () => {
           )}
         </div>
 
-          {/* Show attendees - from accepted invitations and approved requests (public events only) */}
-          {(invitationStats.accepted.length > 0 || (eventData.publicity && requests.filter(req => req.status === 'approved').length > 0)) ? (
+          {/* Show attendees - both from accepted invitations and approved requests */}
+          {(invitationStats.accepted.length > 0 || requests.filter(req => req.status === 'approved').length > 0) ? (
             <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
               {/* Render accepted invitations */}
               {invitationStats.accepted.map((invitation) => (
@@ -1002,8 +973,8 @@ const EventDetails = () => {
                   </div>
                 </div>
               ))}
-              {/* Render approved requests - only for public events */}
-              {eventData.publicity && requests
+              {/* Render approved requests */}
+              {requests
                 .filter(request => request.status === 'approved')
                 .map((request) => (
                   <div key={request._id} className="flex items-center pb-2 border-b border-gray-100">
