@@ -1,16 +1,16 @@
-FROM node:19-alpine
+FROM node:24-alpine
 
-COPY package.json /app/package.json
-
+# Set working directory first
 WORKDIR /app
 
-RUN npm install
+# Copy package.json and install dependencies first (for better caching)
+COPY package*.json ./
+RUN npm ci
 
 COPY . .
 
-
-
+# Expose port
 EXPOSE 8800
 
+# Start the application
 CMD ["node", "app.js"]
-

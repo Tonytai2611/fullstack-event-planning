@@ -2,17 +2,16 @@ version: '3.8'
 
 
 services:
-  
   api:
     build: ./api
     container_name: api
     ports:
       - "8800:8800"
     env_file:
-      - /api/.env
+      - ./api/.env
     volumes:
-      - ./api:/usr/src/app
-      - /usr/src/app/node_modules  
+      - ./api:/app
+      - /app/node_modules  
     networks:
       - event-planning-network
 
@@ -24,8 +23,8 @@ services:
     environment:
       - VITE_API_URL=http://localhost:8800
     volumes:
-      - ./client:/usr/src/app
-      - /usr/src/app/node_modules
+      - ./client:/app
+      - /app/node_modules
     depends_on:
       - api
     networks:
