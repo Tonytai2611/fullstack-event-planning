@@ -3,17 +3,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
 
 import NavPane from '../../components/NavPane.jsx';
+import Comments from '../Comments/Comments.jsx'; // Import new Comments component
 import { useLoaderData } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from '../../context/authContext.jsx';
 import { NotificationContext } from '../../context/notificationContext.jsx';
 import { API_BASE_URL } from '../../config/api';
 
-
 const EventDetails = () => {
   const { id } = useParams();
-  console.log("Event ID from URL parameters:", id); // Add this debugging line
-  const eventData = useLoaderData(); // Get event data from loader
+  console.log("Event ID from URL parameters:", id);
+  const eventData = useLoaderData();
   const { currentUser } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
@@ -21,8 +21,6 @@ const EventDetails = () => {
   const [isOrganizer, setIsOrganizer] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [comment, setComment] = useState('');
-  const [comments, setComments] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [requests, setRequests] = useState([]);
   const [error, setError] = useState(null);
@@ -35,13 +33,10 @@ const EventDetails = () => {
   const resultsRef = useRef(null);
   const inputRef = useRef(null);
 
-  const { sendNotification } = useContext(NotificationContext); // Use the notification context
+  const { sendNotification } = useContext(NotificationContext);
 
   // Organizer statistics
   const [rsvpRate, setRsvpRate] = useState(0);
-
-  const [replyingTo, setReplyingTo] = useState(null);
-  const [replyText, setReplyText] = useState('');
 
   // check event access permissions
   useEffect(() => {
@@ -91,36 +86,9 @@ const EventDetails = () => {
     }
   }, [currentUser, eventData]);
 
-  // Fetch comments for the event
-  useEffect(() => {
-    if (!id) return;
-
-    const fetchComments = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/comments/${id}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch comments');
-        }
-        const data = await response.json();
-        // Add this when fetching comments
-        const normalizedComments = data.map(comment => ({
-          ...comment,
-          replies: sortRepliesByDate(comment.replies || [])  // Ensure replies is always an array and prevent data inconsistency
-        }));
-        setComments(normalizedComments);
-      } catch (err) {
-        console.error('Error fetching comments:', err);
-        setError('Failed to load comments. Please try again later.');
-      }
-    };
-
-    fetchComments();
-  }, [id]);
-
   const fetchInvitationsAndStats = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/events/invitations-get?eventId=${id}`);
-
       const data = await response.json();
       if (!response.ok) {
         alert(data.error || 'Failed to fetch invitations');
@@ -129,9 +97,8 @@ const EventDetails = () => {
 
       const dataArray = data.invitations || [];
       setInvitations(dataArray);
-      console.log("Fetched invitations:", dataArray); // Debugging line
+      console.log("Fetched invitations:", dataArray);
 
-      // Calculate RSVP rate
       const acceptedCount = dataArray.filter(inv => inv.status === 'approved').length;
       const totalRespondedCount = dataArray.filter(inv => inv.status !== 'invited').length;
 
@@ -141,7 +108,6 @@ const EventDetails = () => {
         const calculatedRate = Math.round((acceptedCount / totalRespondedCount) * 100);
         setRsvpRate(calculatedRate);
       }
-
 
     } catch (err) {
       console.error('Error fetching invitations:', err);
@@ -153,7 +119,6 @@ const EventDetails = () => {
   const fetchRequests = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/events/${id}/requests-get`);
-
       const data = await response.json();
       if (!response.ok) {
         alert(data.error || 'Failed to fetch requests');
@@ -161,13 +126,10 @@ const EventDetails = () => {
       }
 
       const dataArray = data.requests || [];
-
       setRequests(dataArray);
-
-      console.log("Fetched requests:", data); // Debugging line
+      console.log("Fetched requests:", data);
     } catch (err) {
       console.error('Error fetching requests:', err);
-
     }
   }
 
@@ -187,164 +149,10 @@ const EventDetails = () => {
 
   // Calculate invitation statistics for organizer view
   const invitationStats = {
-
     total: invitations.length,
     accepted: invitations.filter(inv => inv.status === 'approved'),
     pending: invitations.filter(inv => inv.status === 'invited'),
     declined: invitations.filter(inv => inv.status === 'rejected')
-  };
-
-  const sortRepliesByDate = (replies) => {
-    if (!replies || !Array.isArray(replies)) return [];
-
-    // Create a copy of the array to avoid mutation issues
-    return [...replies].sort((a, b) => {
-      const dateA = new Date(a.createdAt || a.time || 0);
-      const dateB = new Date(b.createdAt || b.time || 0);
-      return dateB - dateA; // Sort by descending order (newest first)
-    });
-  };
-
-  const handleCommentSubmit = async (e) => {
-    e.preventDefault();
-    if (!comment.trim() || !currentUser) return;
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/comments/${id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ text: comment }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to post comment');
-      }
-
-      const newComment = await response.json();
-      setComments(prev => [newComment, ...prev]);
-      setComment('');
-    } catch (err) {
-      console.error('Error posting comment:', err);
-      setError('Failed to post comment. Please try again.');
-    }
-  };
-
-  const handleReplyClick = (commentId) => {
-    setReplyingTo(commentId);
-  };
-
-  const hasNoReplies = (comment) => {
-    // This will be computed fresh on every render
-    return !comment.replies || comment.replies.length === 0;
-  };
-
-  const handleCancelReply = () => {
-    setReplyingTo(null);
-    setReplyText('');
-  };
-
-  const handleReplySubmit = async (commentId) => {
-    if (!replyText.trim() || !currentUser) return;
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/comments/${commentId}/replies`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({ text: replyText }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to post reply');
-      }
-
-      // This is the updated comment with the new reply already included
-      const updatedComment = await response.json();
-
-      // Replace the entire comment object in the comments array
-      setComments(prevComments =>
-        prevComments.map(comment =>
-          comment._id === commentId ? updatedComment : comment
-        )
-      );
-      setReplyingTo(null);
-      setReplyText('');
-    } catch (err) {
-      console.error('Error posting reply:', err);
-      setError('Failed to post reply. Please try again.');
-    }
-  };
-
-  const handleDeleteClick = async (commentId) => {
-    if (!currentUser) return;
-
-    // Confirm before deleting
-    if (!window.confirm('Are you sure you want to delete this comment?')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/comments/${commentId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete comment');
-      }
-
-      // Remove the comment from state
-      setComments(prevComments =>
-        prevComments.filter(comment => comment._id !== commentId)
-      );
-    } catch (err) {
-      console.error('Error deleting comment:', err);
-      setError('Failed to delete comment. Please try again.');
-    }
-  };
-
-  const handleDeleteReply = async (commentId, replyId) => {
-    if (!currentUser) return;
-
-    // Confirm before deleting
-    if (!window.confirm('Are you sure you want to delete this reply?')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/comments/${commentId}/replies/${replyId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete reply');
-      }
-
-      // This is the updated comment with the new reply already included
-      const updatedComment = await response.json();
-
-      // Update the comments state with the updated comment
-      setComments(prevComments =>
-        prevComments.map(comment =>
-          comment._id === commentId ? updatedComment : comment
-        )
-      );
-    } catch (err) {
-      console.error('Error deleting reply:', err);
-      setError('Failed to delete reply. Please try again.');
-    }
   };
 
   const handleSendInviteeReminders = async () => {
@@ -376,7 +184,6 @@ const EventDetails = () => {
       alert('Failed to send reminders');
     }
   };
-
 
   const handleSendAttendeeReminders = async () => {
     if (!isOrganizer || !id) return;
@@ -446,7 +253,6 @@ const EventDetails = () => {
       setIsInviting(false);
     }
   };
-
 
   const handleJoinRequest = async () => {
     if (!currentUser) {
@@ -1120,160 +926,17 @@ const EventDetails = () => {
                 </div>
               </div>
             </section>
-
-            {/* Discussion Section */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-xl font-bold mb-4">Event discussion</h2>
-              {currentUser ? (
-                <div className="flex mb-6">
-                  <img
-                    src={currentUser.avatar || '/images/avatar.png'}
-                    alt="Your avatar"
-                    className="w-10 h-10 rounded-full mr-3"
-                  />
-                  <div className="flex-1">
-                    <textarea
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
-                      placeholder="Ask a question or leave a comment..."
-                      rows="3"
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                    />
-                    <button
-                      className="mt-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-                      onClick={handleCommentSubmit}
-                    >
-                      Send
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg text-center">
-                  <p className="text-gray-600">Sign in to join the discussion</p>
-                  <Link to="/login" className="mt-2 inline-block text-[#569DBA]">
-                    Login or sign up
-                  </Link>
-                </div>
-              )}
-
-              {/* Comments */}
-              <div className="space-y-6">
-                {comments.length > 0 ? (
-                  comments.map((comment) => (
-                    <div key={comment._id || comment.id} className="flex flex-col">
-                      <div className="flex">
-                        <img
-                          src={comment.user?.avatar || '/images/avatar.png'}
-                          alt={comment.user?.name || 'User'}
-                          className="w-10 h-10 rounded-full mr-3"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center mb-1">
-                            <span className="font-medium mr-2">{comment.user?.username || 'Anonymous'}</span>
-                            <span className="text-gray-500 text-sm">
-                              {new Date(comment.createdAt || comment.time).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <p className="text-gray-700">{comment.text}</p>
-                          <button
-                            className="mr-[16px] text-gray-500 text-sm mt-1 hover:text-gray-700"
-                            onClick={() => handleReplyClick(comment._id || comment.id)}
-                          >
-                            Reply
-                          </button>
-                          {String(comment.user?._id) === String(currentUser?._id) &&
-                            (!comment.replies || comment.replies.length === 0) && (
-                              <button
-                                className="mr-[16px] text-gray-500 text-sm mt-1 hover:text-gray-700"
-                                onClick={() => handleDeleteClick(comment._id || comment.id)}
-                              >
-                                Delete
-                              </button>
-                            )}
-                        </div>
-                      </div>
-
-                      {/* Reply form */}
-                      {replyingTo === (comment._id || comment.id) && (
-                        <div className="ml-12 mt-3">
-                          <div className="flex">
-                            <img
-                              src={currentUser?.avatar || '/images/avatar.png'}
-                              alt="Your avatar"
-                              className="w-8 h-8 rounded-full mr-3"
-                            />
-                            <div className="flex-1">
-                              <textarea
-                                className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 text-sm"
-                                placeholder="Write a reply..."
-                                rows="2"
-                                value={replyText}
-                                onChange={(e) => setReplyText(e.target.value)}
-                              />
-                              <div className="flex gap-2 mt-1">
-                                <button
-                                  className="px-4 py-2 bg-[#569DBA] text-white rounded-lg hover:bg-opacity-90 transition-colors text-sm"
-                                  onClick={() => handleReplySubmit(comment._id || comment.id)}
-                                >
-                                  Reply
-                                </button>
-                                <button
-                                  className="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
-                                  onClick={handleCancelReply}
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Display existing replies */}
-                      {comment.replies && comment.replies.length > 0 && (
-                        <div className="ml-12 mt-4 space-y-4">
-                          {comment.replies.map((reply) => (
-                            <div key={reply._id} className="flex">
-                              <img
-                                src={reply.user?.avatar || '/images/avatar.png'}
-                                alt={reply.user?.username || 'User'}
-                                className="w-8 h-8 rounded-full mr-3"
-                              />
-                              <div>
-                                <div className="flex items-center mb-1">
-                                  <span className="font-medium mr-2 text-sm">{reply.user?.username || 'Anonymous'}</span>
-                                  <span className="text-gray-500 text-xs">
-                                    {new Date(reply.createdAt || reply.time).toLocaleDateString()}
-                                  </span>
-                                </div>
-                                <p className="text-gray-700 text-sm">{reply.text}</p>
-                                {console.log(`Comment ${comment._id}: replies=${JSON.stringify(comment.replies)}`)}
-                                {String(reply.user?._id) === String(currentUser?._id) && (
-                                  <button
-                                    className="text-gray-500 text-sm mt-1 hover:text-gray-700"
-                                    onClick={() => handleDeleteReply(comment._id, reply._id)}
-                                  >
-                                    Delete
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 text-center py-4">No comments yet. Be the first to comment!</p>
-                )}
-              </div>
-            </div>
           </div>
 
-          {/* Right Sidebar - Conditional Rendering */}
+          {/* Right Sidebar */}
           <div className="lg:col-span-1">
             {isOrganizer ? renderOrganizerRightSidebar() : renderAttendeeRightSidebar()}
           </div>
+        </div>
+
+        {/* Comments Section - Use the new Comments component */}
+        <div className="pb-8">
+          <Comments eventId={id} />
         </div>
       </div>
     </div>

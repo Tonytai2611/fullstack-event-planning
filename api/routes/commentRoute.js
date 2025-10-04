@@ -1,24 +1,22 @@
-import express from "express";
-import {
-    createComment,
-    getAllComments,
-    updateComment,
+import express from 'express';
+import { 
+    getAllComments, 
+    createComment, 
+    updateComment, 
     deleteComment,
-    createReply,
-    updateReply,
-    deleteReply,
-} from "../controllers/commentController.js";
-import { verifyToken } from "../middleware/verifyToken.js";
+    getCommentThread
+} from '../controllers/commentController.js';
+import { verifyToken } from '../middleware/verifyToken.js';
 
 const router = express.Router();
 
-router.post("/:eventId",verifyToken, createComment);
-router.get("/:eventId", getAllComments);
-router.put("/:commentId", verifyToken, updateComment);
-router.delete("/:commentId", verifyToken, deleteComment);
+// Event-specific comment routes
+router.get('/event/:eventId', getAllComments);                    // GET /api/comments/event/:eventId
+router.post('/event/:eventId', verifyToken, createComment);       // POST /api/comments/event/:eventId
 
-router.post("/:commentId/replies", verifyToken, createReply);
-router.put("/:commentId/replies/:replyId", verifyToken, updateReply);
-router.delete("/:commentId/replies/:replyId", verifyToken, deleteReply);
+// Comment management routes
+router.get('/:commentId/thread', getCommentThread);               // GET /api/comments/:commentId/thread
+router.put('/:commentId', verifyToken, updateComment);            // PUT /api/comments/:commentId
+router.delete('/:commentId', verifyToken, deleteComment);         // DELETE /api/comments/:commentId
 
 export default router;
